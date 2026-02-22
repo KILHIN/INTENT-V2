@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intent V2</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Intent" />
+  <meta name="theme-color" content="#08090c" />
+</head>
+
+<body>
+  <main class="container">
+
+    <!-- Header -->
+    <header class="brand">
+      <h1>Intent</h1>
+      <div class="tagline">Que veux-tu faire de ce moment ?</div>
+    </header>
+
+    <!-- =====================================================
+         ÉCRAN 1 — Moment en cours
+    ====================================================== -->
+    <section id="screenActive" class="screen hidden">
+      <div class="card activeCard">
+        <div id="activePath" class="activePath"></div>
+        <div id="activeDesc" class="activeDesc"></div>
+        <div id="activeTimer" class="activeTimer"></div>
+        <button id="btnSwitch" class="btnSecondary">↩ Changer de moment</button>
+      </div>
+
+      <!-- Feedback post-séance sport -->
+      <div id="feedbackBlock" class="card hidden">
+        <p class="feedbackTitle">Comment s'est passée la séance ?</p>
+        <div class="feedbackBtns">
+          <button class="btnFeedback" data-feedback="easy">Trop facile</button>
+          <button class="btnFeedback" data-feedback="good">Bien 👌</button>
+          <button class="btnFeedback" data-feedback="hard">Trop dur</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         ÉCRAN 2 — Check-in (Nouveau moment)
+    ====================================================== -->
+    <section id="screenCheckin" class="screen hidden">
+      <div class="card">
+        <h2>Nouveau moment</h2>
+
+        <!-- Question 1 — Énergie -->
+        <div class="checkinStep" id="stepEnergy">
+          <p class="checkinQ">Comment tu te sens ?</p>
+          <div class="checkinBtns">
+            <button class="btnCheckin" data-group="energy" data-value="high">🔋 Pleine forme</button>
+            <button class="btnCheckin" data-group="energy" data-value="medium">😐 Correct</button>
+            <button class="btnCheckin" data-group="energy" data-value="low">🥱 Fatigué</button>
+          </div>
+        </div>
+
+        <!-- Question 2 — Temps -->
+        <div class="checkinStep hidden" id="stepTime">
+          <p class="checkinQ">Combien de temps tu as ?</p>
+          <div class="checkinBtns">
+            <button class="btnCheckin" data-group="time" data-value="10">⚡ 10-15 min</button>
+            <button class="btnCheckin" data-group="time" data-value="30">🕐 30 min</button>
+            <button class="btnCheckin" data-group="time" data-value="60">🕑 1h+</button>
+          </div>
+        </div>
+
+        <!-- Question 3 — Envie -->
+        <div class="checkinStep hidden" id="stepMood">
+          <p class="checkinQ">Qu'est-ce qui t'attire ?</p>
+          <div class="checkinBtns">
+            <button class="btnCheckin" data-group="mood" data-value="move">💪 Bouger</button>
+            <button class="btnCheckin" data-group="mood" data-value="relax">🧘 Me détendre</button>
+            <button class="btnCheckin" data-group="mood" data-value="inspire">✨ Surprise</button>
+            <button class="btnCheckin" data-group="mood" data-value="social">📱 Réseaux</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         ÉCRAN 3 — Propositions de l'assistant
+    ====================================================== -->
+    <section id="screenPropose" class="screen hidden">
+      <div class="card">
+        <h2>Je te propose</h2>
+        <div id="proposals" class="proposals"></div>
+        <button id="btnRedo" class="btnSecondary" style="margin-top:12px;">↩ Recommencer</button>
+      </div>
+
+      <!-- Réseaux sociaux en accordéon -->
+      <details class="accordion">
+        <summary>📱 Accès direct aux apps</summary>
+        <div class="accordion__content">
+          <button class="btnApp" data-app="instagram">📸 Instagram</button>
+          <button class="btnApp" data-app="x">🐦 X</button>
+          <button class="btnApp" data-app="facebook">👤 Facebook</button>
+          <button class="btnApp" data-app="youtube">🎬 YouTube</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- =====================================================
+         ÉCRAN 4 — Session réseau social (V1 intégrée)
+    ====================================================== -->
+    <section id="screenSocial" class="screen hidden">
+      <div class="card">
+        <h2 id="socialTitle">Quelle app ?</h2>
+        <div id="socialDesc" class="activeDesc"></div>
+        <button id="btnSocialStop" class="btnDanger">⏹ Terminer la session</button>
+        <button id="btnSocialSwitch" class="btnSecondary">↩ Changer</button>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         BOUTON FLOTTANT — Nouveau moment
+    ====================================================== -->
+    <button id="btnNewMoment" class="btnFloat">+ Nouveau moment</button>
+
+    <!-- =====================================================
+         DEBUG (toujours visible en bas)
+    ====================================================== -->
+    <details class="accordion debugAccordion">
+      <summary>🔍 Debug</summary>
+      <div class="accordion__content">
+        <pre id="debugOutput" class="debugOutput"></pre>
+        <button id="btnDebugRefresh">Rafraîchir</button>
+        <button id="btnResetAll" class="btnDanger">💣 Reset complet</button>
+      </div>
+    </details>
+
+  </main>
+
+  <script src="storage.js"></script>
+  <script src="profile.js"></script>
+  <script src="context.js"></script>
+  <script src="assistant.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
