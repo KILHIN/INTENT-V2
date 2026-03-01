@@ -21,6 +21,7 @@
     .tabs::-webkit-scrollbar{display:none;}
     .tab{flex-shrink:0;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
     .tab.active{color:var(--bg);border-color:transparent;font-weight:700;}
+    .tab[data-cat="tout"].active{background:var(--text);}
     .tab[data-cat="tech"].active{background:var(--tech);}
     .tab[data-cat="foot"].active{background:var(--foot);}
     .tab[data-cat="geo"].active{background:var(--geo);}
@@ -28,6 +29,7 @@
     .tab[data-cat="sport"].active{background:var(--sport);}
     .feed{padding:0 16px;}
     .accentBar{height:2px;width:28px;margin-bottom:14px;border-radius:1px;}
+    .accentBar[data-cat="tout"]{background:var(--text);}
     .accentBar[data-cat="tech"]{background:var(--tech);}
     .accentBar[data-cat="foot"]{background:var(--foot);}
     .accentBar[data-cat="geo"]{background:var(--geo);}
@@ -61,34 +63,36 @@
   <script>
   const PROXY = "https://api.allorigins.win/get?url=";
 
-  // Toutes les sources passent via Le Figaro qui fonctionne avec allorigins
-  // + L'Équipe confirmée aussi
+  // 3 sources confirmées qui fonctionnent
+  const SOURCES = [
+    { name:"Le Figaro", url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" },
+    { name:"RMC Sport", url:"https://rmcsport.bfmtv.com/rss/football/" },
+    { name:"BFM TV",    url:"https://www.bfmtv.com/rss/news-24-7/" }
+  ];
+
+  // Filtres par mots-clés dans le titre (après fix encodage)
+  const FILTERS = {
+    tout:    null, // pas de filtre
+    tech:    ["ia", "intel", "tech", "apple", "google", "microsoft", "openai", "robot", "numérique", "digital", "algorithme", "startup", "iphone", "android"],
+    foot:    ["foot", "football", "ligue 1", "ligue des champions", "équipe de france", "but", "match", "joueur", "entraineur", "transfert", "uefa", "fifa", "ballon", "rennes", "brest", "lorient", "guingamp"],
+    geo:     ["guerre", "iran", "ukraine", "russie", "chine", "états-unis", "europe", "diplomatie", "conflit", "international", "président", "ministre", "élection", "macron", "trump", "otan"],
+    finance: ["bourse", "cac", "euro", "dollar", "économie", "inflation", "taux", "banque", "finance", "marché", "pétrole", "opep", "croissance", "budget", "impôt", "dette"],
+    sport:   ["sport", "tennis", "rugby", "natation", "cyclisme", "athlé", "jeux", "champion", "tournoi", "coupe", "médaille", "france", "équipe"]
+  };
+
   const CATEGORIES = [
-    { id:"tech", label:"⚡ Tech & IA", sources:[
-      { name:"Le Figaro Tech", url:"https://www.lefigaro.fr/secteur/high-tech/rss.xml" },
-      { name:"The Verge",      url:"https://www.theverge.com/rss/index.xml" }
-    ]},
-    { id:"foot", label:"⚽ Foot", sources:[
-      { name:"Le Figaro Foot", url:"https://www.lefigaro.fr/sports/football/rss.xml" },
-      { name:"L'Équipe Foot",  url:"https://www.lequipe.fr/rss/actu_rss_Football.xml" }
-    ]},
-    { id:"geo", label:"🌍 Géopolitique", sources:[
-      { name:"Le Figaro Monde", url:"https://www.lefigaro.fr/international/rss.xml" },
-      { name:"Le Figaro",       url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" }
-    ]},
-    { id:"finance", label:"📈 Finance", sources:[
-      { name:"Le Figaro Éco", url:"https://www.lefigaro.fr/conjoncture/rss.xml" },
-      { name:"Le Figaro Bourse", url:"https://www.lefigaro.fr/bourse/rss.xml" }
-    ]},
-    { id:"sport", label:"🏅 Sport FR", sources:[
-      { name:"Le Figaro Sport", url:"https://www.lefigaro.fr/sports/rss.xml" },
-      { name:"L'Équipe",        url:"https://www.lequipe.fr/rss/actu_rss.xml" }
-    ]}
+    { id:"tout",    label:"🗞️ Tout" },
+    { id:"geo",     label:"🌍 Géopolitique" },
+    { id:"foot",    label:"⚽ Foot" },
+    { id:"finance", label:"📈 Finance" },
+    { id:"tech",    label:"⚡ Tech" },
+    { id:"sport",   label:"🏅 Sport FR" }
   ];
 
   const CACHE_TTL = 10 * 60 * 1000;
-  const cache = {};
-  let currentCat = sessionStorage.getItem("news_cat") || "tech";
+  let _allArticles = null;
+  let _cacheTs = 0;
+  let currentCat = sessionStorage.getItem("news_cat") || "tout";
 
   document.getElementById("headerDate").textContent =
     new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" });
@@ -103,7 +107,7 @@
     tabsEl.appendChild(btn);
   });
 
-  loadFeed(currentCat);
+  loadAll();
 
   function selectCat(id) {
     currentCat = id;
@@ -111,68 +115,73 @@
     document.querySelectorAll(".tab").forEach(t =>
       t.classList.toggle("active", t.dataset.cat === id)
     );
-    loadFeed(id);
+    if (_allArticles) renderFiltered();
+    else loadAll();
   }
 
-  // Corrige l'encodage latin1 mal interprété en UTF-8
   function fixEncoding(str) {
     if (!str) return "";
-    try {
-      return decodeURIComponent(escape(str));
-    } catch(e) {
-      return str;
-    }
+    try { return decodeURIComponent(escape(str)); } catch(e) { return str; }
   }
 
   async function fetchSource(source) {
     try {
       const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
       const json = await res.json();
-      if (!json.contents) return [];
-
-      // Parse XML — on force l'encodage correct
+      if (!json.contents || json.contents.includes("404")) return [];
       const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
       const doc   = new DOMParser().parseFromString(fixed, "text/xml");
-      const items = [...doc.querySelectorAll("item, entry")];
-
-      return items.slice(0, 10).map(item => {
+      return [...doc.querySelectorAll("item, entry")].slice(0, 15).map(item => {
         const rawTitle = item.querySelector("title")?.textContent?.trim() || "";
         const rawLink  = item.querySelector("link")?.textContent?.trim()
                       || item.querySelector("link")?.getAttribute("href") || "#";
         const pubDate  = item.querySelector("pubDate, published, updated")?.textContent || "";
-        return {
-          title:   fixEncoding(rawTitle),
-          link:    rawLink,
-          pubDate: pubDate,
-          source:  source.name
-        };
+        return { title: fixEncoding(rawTitle), link: rawLink, pubDate, source: source.name };
       }).filter(a => a.title && a.link !== "#");
     } catch(e) { return []; }
   }
 
-  async function loadFeed(catId) {
+  async function loadAll() {
     const feed = document.getElementById("feed");
-    const cat  = CATEGORIES.find(c => c.id === catId);
-    if (!cat) return;
-    if (cache[catId] && Date.now() - cache[catId].ts < CACHE_TTL) {
-      renderArticles(cache[catId].articles, catId); return;
-    }
+    if (_allArticles && Date.now() - _cacheTs < CACHE_TTL) { renderFiltered(); return; }
     feed.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
-    const results  = await Promise.allSettled(cat.sources.map(s => fetchSource(s)));
-    const articles = results
+    const results = await Promise.allSettled(SOURCES.map(s => fetchSource(s)));
+    _allArticles = results
       .filter(r => r.status === "fulfilled").flatMap(r => r.value)
       .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
       .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i);
-    if (!articles.length) {
-      feed.innerHTML = '<div class="stateMsg">Aucun article chargé.<br><button class="retryBtn" onclick="retry(\'' + catId + '\')">Réessayer</button></div>';
+    _cacheTs = Date.now();
+    if (!_allArticles.length) {
+      feed.innerHTML = '<div class="stateMsg">Aucun article chargé.<br><button class="retryBtn" onclick="forceReload()">Réessayer</button></div>';
       return;
     }
-    cache[catId] = { articles, ts: Date.now() };
-    renderArticles(articles, catId);
+    renderFiltered();
   }
 
-  function retry(catId) { delete cache[catId]; loadFeed(catId); }
-  window.retry = retry;
+  function renderFiltered() {
+    const keywords = FILTERS[currentCat];
+    let articles = _allArticles;
+    if (keywords) {
+      articles = _allArticles.filter(a => {
+        const t = a.title.toLowerCase();
+        return keywords.some(k => t.includes(k));
+      });
+      // Si pas assez d'articles filtrés, on affiche tout
+      if (articles.length < 3) articles = _allArticles;
+    }
+    const feed = document.getElementById("feed");
+    feed.innerHTML =
+      '<div class="accentBar" data-cat="' + currentCat + '"></div>' +
+      articles.map(a =>
+        '<a class="article" href="' + a.link + '" target="_blank" rel="noopener noreferrer">' +
+          '<div class="articleMeta"><span class="articleSource">' + a.source + '</span>' +
+          '<span class="articleDot"></span><span class="articleTime">' + timeAgo(a.pubDate) + '</span></div>' +
+          '<div class="articleTitle">' + a.title + '</div></a>'
+      ).join("");
+  }
+
+  function forceReload() { _allArticles = null; loadAll(); }
+  window.forceReload = forceReload;
 
   function timeAgo(dateStr) {
     if (!dateStr) return "";
@@ -182,17 +191,6 @@
     if (h >= 1) return h + "h";
     if (m >= 1) return m + "min";
     return "à l'instant";
-  }
-
-  function renderArticles(articles, catId) {
-    document.getElementById("feed").innerHTML =
-      '<div class="accentBar" data-cat="' + catId + '"></div>' +
-      articles.map(a =>
-        '<a class="article" href="' + a.link + '" target="_blank" rel="noopener noreferrer">' +
-          '<div class="articleMeta"><span class="articleSource">' + a.source + '</span>' +
-          '<span class="articleDot"></span><span class="articleTime">' + timeAgo(a.pubDate) + '</span></div>' +
-          '<div class="articleTitle">' + a.title + '</div></a>'
-      ).join("");
   }
   </script>
 </body>

@@ -5,8 +5,8 @@
 const PROXY = "https://api.allorigins.win/get?url=";
 const NEWS_SOURCES = [
   { name:"Le Figaro", url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" },
-  
-  
+  { name:"RMC Sport", url:"https://rmcsport.bfmtv.com/rss/football/" },
+  { name:"BFM TV",    url:"https://www.bfmtv.com/rss/news-24-7/" }
 ];
 const NEWS_CACHE_TTL = 15 * 60 * 1000;
 let _newsCache = null;
@@ -163,19 +163,27 @@ function fixEncoding(str) {
 async function fetchNewsWidget() {
   if (_newsCache && Date.now() - _newsCacheTs < NEWS_CACHE_TTL) return _newsCache;
   try {
-    const url  = "https://www.lefigaro.fr/rss/figaro_actualites.xml";
-    const res  = await fetch(PROXY + encodeURIComponent(url), { signal: AbortSignal.timeout(12000) });
-    const json = await res.json();
-    if (!json.contents) return [];
-    const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
-    const doc   = new DOMParser().parseFromString(fixed, "text/xml");
-    const items = [...doc.querySelectorAll("item")];
-    const articles = items.slice(0, 5).map(item => ({
-      title:   fixEncoding(item.querySelector("title")?.textContent?.trim() || ""),
-      link:    item.querySelector("link")?.textContent?.trim() || "#",
-      pubDate: item.querySelector("pubDate")?.textContent || "",
-      source:  "Le Figaro"
-    })).filter(a => a.title && a.link !== "#");
+    const results = await Promise.allSettled(
+      NEWS_SOURCES.map(async source => {
+        const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
+        const json = await res.json();
+        if (!json.contents || json.contents.includes("404")) return [];
+        const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
+        const doc   = new DOMParser().parseFromString(fixed, "text/xml");
+        return [...doc.querySelectorAll("item, entry")].slice(0, 5).map(item => ({
+          title:   fixEncoding(item.querySelector("title")?.textContent?.trim() || ""),
+          link:    item.querySelector("link")?.textContent?.trim()
+                || item.querySelector("link")?.getAttribute("href") || "#",
+          pubDate: item.querySelector("pubDate, published, updated")?.textContent || "",
+          source:  source.name
+        })).filter(a => a.title && a.link !== "#");
+      })
+    );
+    const articles = results
+      .filter(r => r.status === "fulfilled").flatMap(r => r.value)
+      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+      .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i)
+      .slice(0, 6);
     _newsCache   = articles;
     _newsCacheTs = Date.now();
     return articles;
