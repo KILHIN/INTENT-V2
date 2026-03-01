@@ -60,39 +60,12 @@
   <div class="feed" id="feed"></div>
 
   <script>
-  const GN = "https://news.google.com/rss/search?hl=fr&gl=FR&ceid=FR:fr&q=";
-
   const CATEGORIES = [
-    { id:"tech",    label:"⚡ Tech & IA",
-      queries:[
-        { name:"IA",   q:"intelligence+artificielle+OR+ChatGPT+OR+IA" },
-        { name:"Tech", q:"technologie+Apple+OR+Google+OR+startup" }
-      ]
-    },
-    { id:"foot",    label:"⚽ Foot",
-      queries:[
-        { name:"Europe",  q:"football+Ligue1+OR+Premier+League+OR+Liga+OR+Bundesliga" },
-        { name:"Bretagne", q:"Brest+OR+Rennes+OR+Lorient+OR+Guingamp+football" }
-      ]
-    },
-    { id:"geo",     label:"🌍 Géopolitique",
-      queries:[
-        { name:"Monde", q:"geopolitique+OR+guerre+OR+diplomatie+OR+conflit+international" },
-        { name:"Actu",  q:"actualite+internationale+monde" }
-      ]
-    },
-    { id:"finance", label:"📈 Finance",
-      queries:[
-        { name:"Marchés", q:"bourse+CAC40+OR+marches+financiers" },
-        { name:"Finance", q:"finance+investissement+OR+economie" }
-      ]
-    },
-    { id:"sport",   label:"🏅 Sport FR",
-      queries:[
-        { name:"Sport",       q:"sport+francais+resultats+OR+athletisme+OR+natation" },
-        { name:"Compétitions", q:"France+sport+competition+OR+championnat" }
-      ]
-    }
+    { id:"tech",    label:"⚡ Tech & IA"   },
+    { id:"foot",    label:"⚽ Foot"         },
+    { id:"geo",     label:"🌍 Géopolitique" },
+    { id:"finance", label:"📈 Finance"      },
+    { id:"sport",   label:"🏅 Sport FR"     }
   ];
 
   const CACHE_TTL = 10 * 60 * 1000;
@@ -123,49 +96,27 @@
     loadFeed(id);
   }
 
-  async function fetchQuery(q) {
-    const res  = await fetch(GN + encodeURIComponent(q.q), { signal: AbortSignal.timeout(10000) });
-    const text = await res.text();
-    const doc  = new DOMParser().parseFromString(text, "text/xml");
-    return [...doc.querySelectorAll("item")].slice(0, 10).map(item => {
-      let title  = item.querySelector("title")?.textContent?.trim() || "";
-      let source = q.name;
-      const dash = title.lastIndexOf(" - ");
-      if (dash !== -1) { source = title.slice(dash + 3); title = title.slice(0, dash); }
-      return {
-        title,
-        source,
-        link:    item.querySelector("link")?.textContent?.trim() || "#",
-        pubDate: item.querySelector("pubDate")?.textContent || ""
-      };
-    }).filter(a => a.title && a.link !== "#");
-  }
-
   async function loadFeed(catId) {
     const feed = document.getElementById("feed");
-    const cat  = CATEGORIES.find(c => c.id === catId);
-    if (!cat) return;
     if (cache[catId] && Date.now() - cache[catId].ts < CACHE_TTL) {
       renderArticles(cache[catId].articles, catId); return;
     }
     feed.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
     try {
-      const results  = await Promise.allSettled(cat.queries.map(q => fetchQuery(q)));
-      const articles = results
-        .filter(r => r.status === "fulfilled").flatMap(r => r.value)
-        .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-        .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i);
-      if (!articles.length) { showError(catId, "Aucun article disponible."); return; }
-      cache[catId] = { articles, ts: Date.now() };
-      renderArticles(articles, catId);
-    } catch(e) { showError(catId, "Erreur réseau."); }
+      const res  = await fetch("/.netlify/functions/rss?cat=" + catId, { signal: AbortSignal.timeout(12000) });
+      const json = await res.json();
+      if (!json.ok || !json.articles.length) { showError(catId, "Aucun article."); return; }
+      cache[catId] = { articles: json.articles, ts: Date.now() };
+      renderArticles(json.articles, catId);
+    } catch(e) {
+      showError(catId, "Erreur de chargement.");
+    }
   }
 
   function showError(catId, msg) {
     document.getElementById("feed").innerHTML =
       '<div class="stateMsg">' + msg + '<br><button class="retryBtn" onclick="retry(\'' + catId + '\')">Réessayer</button></div>';
   }
-
   function retry(catId) { delete cache[catId]; loadFeed(catId); }
   window.retry = retry;
 
