@@ -383,54 +383,25 @@ button:active {
 
 
 
+
 /* ---------------------------------------------------------
-   NEWS LINKS — liens directs par catégorie
+   NEWS CARD — lien vers la page actus
    --------------------------------------------------------- */
 
-.newsLinks {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.newsLinksHeader {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-  margin-bottom: 2px;
-}
-
-.newsLinksRow {
+.newsCard {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.newsLinksLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  width: 52px;
-  flex-shrink: 0;
-}
-
-.btnNews {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: var(--radius);
   text-decoration: none;
-  font-family: 'DM Sans', sans-serif;
-  transition: background 0.15s;
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
 }
-.btnNews:active { background: rgba(255,255,255,0.10); }
+.newsCard:active { background: rgba(255,255,255,0.08); }
+.newsCardIcon  { font-size: 20px; }
+.newsCardLabel { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; flex: 1; }
+.newsCardArrow { font-size: 16px; color: var(--muted); }

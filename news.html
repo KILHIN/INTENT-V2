@@ -8,48 +8,46 @@
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
     :root {
       --bg:#08090c;--surface:#111218;--border:rgba(255,255,255,0.07);
-      --text:#eeeef3;--muted:rgba(255,255,255,0.38);--dim:rgba(255,255,255,0.10);
-      --tech:#4facfe;--foot:#43e97b;--geo:#f7971e;--finance:#a78bfa;--sport:#f953c6;
+      --text:#eeeef3;--muted:rgba(255,255,255,0.38);
+      --geo:#f7971e;--foot:#43e97b;--sport:#f953c6;--tech:#4facfe;--finance:#a78bfa;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:48px;}
-    header{padding:28px 20px 12px;display:flex;align-items:baseline;gap:10px;}
+    header{padding:28px 20px 16px;display:flex;align-items:baseline;gap:10px;}
     header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;}
     .headerBack{font-size:13px;color:var(--muted);text-decoration:none;}
     .headerDate{margin-left:auto;font-size:11px;color:var(--muted);font-weight:300;}
-    .tabs{display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;}
+    .tabs{display:flex;gap:6px;padding:0 16px 20px;overflow-x:auto;scrollbar-width:none;}
     .tabs::-webkit-scrollbar{display:none;}
     .tab{flex-shrink:0;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
     .tab.active{color:var(--bg);border-color:transparent;font-weight:700;}
-    .tab[data-cat="tout"].active{background:var(--text);}
-    .tab[data-cat="tech"].active{background:var(--tech);}
-    .tab[data-cat="foot"].active{background:var(--foot);}
-    .tab[data-cat="geo"].active{background:var(--geo);}
+    .tab[data-cat="geo"].active    {background:var(--geo);}
+    .tab[data-cat="foot"].active   {background:var(--foot);}
+    .tab[data-cat="sport"].active  {background:var(--sport);}
+    .tab[data-cat="tech"].active   {background:var(--tech);}
     .tab[data-cat="finance"].active{background:var(--finance);}
-    .tab[data-cat="sport"].active{background:var(--sport);}
-    .feed{padding:0 16px;}
-    .accentBar{height:2px;width:28px;margin-bottom:14px;border-radius:1px;}
-    .accentBar[data-cat="tout"]{background:var(--text);}
-    .accentBar[data-cat="tech"]{background:var(--tech);}
-    .accentBar[data-cat="foot"]{background:var(--foot);}
-    .accentBar[data-cat="geo"]{background:var(--geo);}
+    .panels{padding:0 16px;display:flex;flex-direction:column;gap:8px;}
+    .panel{display:none;flex-direction:column;gap:8px;}
+    .panel.active{display:flex;}
+    .accentBar{height:2px;width:28px;margin-bottom:4px;border-radius:1px;}
+    .accentBar[data-cat="geo"]    {background:var(--geo);}
+    .accentBar[data-cat="foot"]   {background:var(--foot);}
+    .accentBar[data-cat="sport"]  {background:var(--sport);}
+    .accentBar[data-cat="tech"]   {background:var(--tech);}
     .accentBar[data-cat="finance"]{background:var(--finance);}
-    .accentBar[data-cat="sport"]{background:var(--sport);}
-    .article{display:flex;flex-direction:column;gap:5px;padding:14px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent;}
-    .article:active{opacity:0.5;}
-    .article:last-child{border-bottom:none;}
-    .articleMeta{display:flex;align-items:center;gap:6px;}
-    .articleSource{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);}
-    .articleDot{width:2px;height:2px;border-radius:50%;background:var(--dim);flex-shrink:0;}
-    .articleTime{font-size:11px;color:var(--muted);font-weight:300;}
-    .articleTitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;line-height:1.35;}
-    .loader{display:flex;gap:6px;justify-content:center;padding:56px 0;}
-    .loader span{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:pulse 1.2s ease-in-out infinite;}
-    .loader span:nth-child(2){animation-delay:.2s;}
-    .loader span:nth-child(3){animation-delay:.4s;}
-    @keyframes pulse{0%,80%,100%{transform:scale(.8);opacity:.4;}40%{transform:scale(1.2);opacity:1;}}
-    .stateMsg{padding:48px 0;text-align:center;color:var(--muted);font-size:14px;line-height:1.7;}
-    .retryBtn{margin-top:14px;display:inline-block;padding:8px 20px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:13px;cursor:pointer;background:var(--surface);font-family:'DM Sans',sans-serif;}
+    .siteLink{
+      display:flex;align-items:center;gap:14px;
+      padding:14px 16px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:14px;text-decoration:none;color:inherit;
+      -webkit-tap-highlight-color:transparent;transition:background 0.12s;
+    }
+    .siteLink:active{background:rgba(255,255,255,0.08);}
+    .siteFlag{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+    .siteBody{flex:1;display:flex;flex-direction:column;gap:2px;}
+    .siteName{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+    .siteDesc{font-size:12px;color:var(--muted);font-weight:300;}
+    .siteArrow{font-size:15px;color:var(--muted);}
   </style>
 </head>
 <body>
@@ -59,45 +57,54 @@
     <span class="headerDate" id="headerDate"></span>
   </header>
   <div class="tabs" id="tabs"></div>
-  <div class="feed" id="feed"></div>
+  <div class="panels" id="panels"></div>
   <script>
-  const PROXY = "https://api.allorigins.win/get?url=";
-
-  // 3 sources confirmées qui fonctionnent
-  const SOURCES = [
-    { name:"Le Figaro", url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" },
-    { name:"RMC Sport", url:"https://rmcsport.bfmtv.com/rss/football/" },
-    { name:"BFM TV",    url:"https://www.bfmtv.com/rss/news-24-7/" }
-  ];
-
-  // Filtres par mots-clés dans le titre (après fix encodage)
-  const FILTERS = {
-    tout:    null, // pas de filtre
-    tech:    ["ia", "intel", "tech", "apple", "google", "microsoft", "openai", "robot", "numérique", "digital", "algorithme", "startup", "iphone", "android"],
-    foot:    ["foot", "football", "ligue 1", "ligue des champions", "équipe de france", "but", "match", "joueur", "entraineur", "transfert", "uefa", "fifa", "ballon", "rennes", "brest", "lorient", "guingamp"],
-    geo:     ["guerre", "iran", "ukraine", "russie", "chine", "états-unis", "europe", "diplomatie", "conflit", "international", "président", "ministre", "élection", "macron", "trump", "otan"],
-    finance: ["bourse", "cac", "euro", "dollar", "économie", "inflation", "taux", "banque", "finance", "marché", "pétrole", "opep", "croissance", "budget", "impôt", "dette"],
-    sport:   ["sport", "tennis", "rugby", "natation", "cyclisme", "athlé", "jeux", "champion", "tournoi", "coupe", "médaille", "france", "équipe"]
-  };
-
   const CATEGORIES = [
-    { id:"tout",    label:"🗞️ Tout" },
-    { id:"geo",     label:"🌍 Géopolitique" },
-    { id:"foot",    label:"⚽ Foot" },
-    { id:"finance", label:"📈 Finance" },
-    { id:"tech",    label:"⚡ Tech" },
-    { id:"sport",   label:"🏅 Sport FR" }
+    { id:"geo", label:"🌍 Géopolitique", sites:[
+      { flag:"🇫🇷", name:"Le Monde",            desc:"La référence de l'info internationale",  url:"https://www.lemonde.fr/international" },
+      { flag:"🇫🇷", name:"Le Figaro International", desc:"Actualité géopolitique mondiale",    url:"https://www.lefigaro.fr/international" },
+      { flag:"🇫🇷", name:"Courrier International", desc:"La presse mondiale traduite en français", url:"https://www.courrierinternational.com" },
+      { flag:"🇫🇷", name:"Orient XXI",          desc:"Spécialiste Moyen-Orient & monde arabe", url:"https://orientxxi.info" },
+      { flag:"🇫🇷", name:"Le Grand Continent",  desc:"Analyses géopolitiques de fond",         url:"https://legrandcontinent.eu/fr" }
+    ]},
+    { id:"foot", label:"⚽ Foot", sites:[
+      { flag:"🇫🇷", name:"L'Équipe",            desc:"Résultats, transferts, toute l'actu foot", url:"https://www.lequipe.fr/Football" },
+      { flag:"🇫🇷", name:"RMC Sport",           desc:"Foot en direct, mercato, interviews",    url:"https://rmcsport.bfmtv.com/football" },
+      { flag:"🇫🇷", name:"Foot Mercato",        desc:"Spécialiste transferts & mercato",       url:"https://www.footmercato.net" },
+      { flag:"🇫🇷", name:"So Foot",             desc:"Foot culture, longues lectures",         url:"https://www.sofoot.com" },
+      { flag:"🌍", name:"Transfermarkt",        desc:"Valeurs marchandes & transferts (EN/FR)", url:"https://www.transfermarkt.fr" }
+    ]},
+    { id:"sport", label:"🏅 Sport FR", sites:[
+      { flag:"🇫🇷", name:"L'Équipe",            desc:"Tous les sports, résultats en direct",   url:"https://www.lequipe.fr" },
+      { flag:"🇫🇷", name:"Eurosport",           desc:"Sport en direct & replay",               url:"https://www.eurosport.fr" },
+      { flag:"🇫🇷", name:"RMC Sport",           desc:"Actu sport, résultats, analyses",        url:"https://rmcsport.bfmtv.com" },
+      { flag:"🇫🇷", name:"Le 10 Sport",         desc:"Sport FR, mercato, exclus",              url:"https://le10sport.com" },
+      { flag:"🇫🇷", name:"France TV Sport",     desc:"JO, sport amateur & professionnel",      url:"https://sport.france.tv" }
+    ]},
+    { id:"tech", label:"⚡ Tech & IA", sites:[
+      { flag:"🇫🇷", name:"01net",               desc:"High-tech, tests produits, actu numérique", url:"https://www.01net.com" },
+      { flag:"🇫🇷", name:"Numerama",            desc:"Tech, IA & société numérique",           url:"https://www.numerama.com" },
+      { flag:"🇫🇷", name:"Frandroid",           desc:"Android, smartphones, tech",             url:"https://www.frandroid.com" },
+      { flag:"🇫🇷", name:"Next.ink",            desc:"Journalisme tech indépendant & de fond", url:"https://next.ink" },
+      { flag:"🌍", name:"The Verge",            desc:"Référence mondiale tech & IA (EN)",      url:"https://www.theverge.com" }
+    ]},
+    { id:"finance", label:"📈 Finance", sites:[
+      { flag:"🇫🇷", name:"Les Échos",           desc:"Économie, marchés, entreprises",         url:"https://www.lesechos.fr" },
+      { flag:"🇫🇷", name:"BFM Business",        desc:"Marchés en direct, économie FR & monde", url:"https://bfmbusiness.bfmtv.com" },
+      { flag:"🇫🇷", name:"La Tribune",          desc:"Économie, finance, innovation",          url:"https://www.latribune.fr" },
+      { flag:"🇫🇷", name:"Boursorama",          desc:"Bourse, cours en direct, actualités",    url:"https://www.boursorama.com/bourse/actualites" },
+      { flag:"🇫🇷", name:"Zone Bourse",         desc:"Analyses & données marchés",             url:"https://www.zonebourse.com" }
+    ]}
   ];
-
-  const CACHE_TTL = 10 * 60 * 1000;
-  let _allArticles = null;
-  let _cacheTs = 0;
-  let currentCat = sessionStorage.getItem("news_cat") || "tout";
 
   document.getElementById("headerDate").textContent =
     new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" });
 
-  const tabsEl = document.getElementById("tabs");
+  let currentCat = sessionStorage.getItem("news_cat") || "geo";
+
+  const tabsEl   = document.getElementById("tabs");
+  const panelsEl = document.getElementById("panels");
+
   CATEGORIES.forEach(cat => {
     const btn = document.createElement("button");
     btn.className = "tab" + (cat.id === currentCat ? " active" : "");
@@ -105,92 +112,30 @@
     btn.textContent = cat.label;
     btn.addEventListener("click", () => selectCat(cat.id));
     tabsEl.appendChild(btn);
-  });
 
-  loadAll();
+    const panel = document.createElement("div");
+    panel.className = "panel" + (cat.id === currentCat ? " active" : "");
+    panel.dataset.cat = cat.id;
+    panel.innerHTML =
+      '<div class="accentBar" data-cat="' + cat.id + '"></div>' +
+      cat.sites.map(s =>
+        '<a class="siteLink" href="' + s.url + '" target="_blank" rel="noopener noreferrer">' +
+          '<span class="siteFlag">' + s.flag + '</span>' +
+          '<div class="siteBody">' +
+            '<span class="siteName">' + s.name + '</span>' +
+            '<span class="siteDesc">' + s.desc + '</span>' +
+          '</div>' +
+          '<span class="siteArrow">↗</span>' +
+        '</a>'
+      ).join("");
+    panelsEl.appendChild(panel);
+  });
 
   function selectCat(id) {
     currentCat = id;
     sessionStorage.setItem("news_cat", id);
-    document.querySelectorAll(".tab").forEach(t =>
-      t.classList.toggle("active", t.dataset.cat === id)
-    );
-    if (_allArticles) renderFiltered();
-    else loadAll();
-  }
-
-  function fixEncoding(str) {
-    if (!str) return "";
-    try { return decodeURIComponent(escape(str)); } catch(e) { return str; }
-  }
-
-  async function fetchSource(source) {
-    try {
-      const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
-      const json = await res.json();
-      if (!json.contents || json.contents.includes("404")) return [];
-      const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
-      const doc   = new DOMParser().parseFromString(fixed, "text/xml");
-      return [...doc.querySelectorAll("item, entry")].slice(0, 15).map(item => {
-        const rawTitle = item.querySelector("title")?.textContent?.trim() || "";
-        const rawLink  = item.querySelector("link")?.textContent?.trim()
-                      || item.querySelector("link")?.getAttribute("href") || "#";
-        const pubDate  = item.querySelector("pubDate, published, updated")?.textContent || "";
-        return { title: fixEncoding(rawTitle), link: rawLink, pubDate, source: source.name };
-      }).filter(a => a.title && a.link !== "#");
-    } catch(e) { return []; }
-  }
-
-  async function loadAll() {
-    const feed = document.getElementById("feed");
-    if (_allArticles && Date.now() - _cacheTs < CACHE_TTL) { renderFiltered(); return; }
-    feed.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
-    const results = await Promise.allSettled(SOURCES.map(s => fetchSource(s)));
-    _allArticles = results
-      .filter(r => r.status === "fulfilled").flatMap(r => r.value)
-      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-      .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i);
-    _cacheTs = Date.now();
-    if (!_allArticles.length) {
-      feed.innerHTML = '<div class="stateMsg">Aucun article chargé.<br><button class="retryBtn" onclick="forceReload()">Réessayer</button></div>';
-      return;
-    }
-    renderFiltered();
-  }
-
-  function renderFiltered() {
-    const keywords = FILTERS[currentCat];
-    let articles = _allArticles;
-    if (keywords) {
-      articles = _allArticles.filter(a => {
-        const t = a.title.toLowerCase();
-        return keywords.some(k => t.includes(k));
-      });
-      // Si pas assez d'articles filtrés, on affiche tout
-      if (articles.length < 3) articles = _allArticles;
-    }
-    const feed = document.getElementById("feed");
-    feed.innerHTML =
-      '<div class="accentBar" data-cat="' + currentCat + '"></div>' +
-      articles.map(a =>
-        '<a class="article" href="' + a.link + '" target="_blank" rel="noopener noreferrer">' +
-          '<div class="articleMeta"><span class="articleSource">' + a.source + '</span>' +
-          '<span class="articleDot"></span><span class="articleTime">' + timeAgo(a.pubDate) + '</span></div>' +
-          '<div class="articleTitle">' + a.title + '</div></a>'
-      ).join("");
-  }
-
-  function forceReload() { _allArticles = null; loadAll(); }
-  window.forceReload = forceReload;
-
-  function timeAgo(dateStr) {
-    if (!dateStr) return "";
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const h = Math.floor(diff / 3600000), m = Math.floor(diff / 60000);
-    if (h > 48) return Math.floor(h/24) + "j";
-    if (h >= 1) return h + "h";
-    if (m >= 1) return m + "min";
-    return "à l'instant";
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.cat === id));
+    document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.dataset.cat === id));
   }
   </script>
 </body>
