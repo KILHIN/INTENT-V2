@@ -60,12 +60,43 @@
   <div class="feed" id="feed"></div>
 
   <script>
+  // rss2json — seul proxy qui a fonctionné
+  // On utilise uniquement des sources anglophones reconnues pour tech/geo/finance
+  // Pour foot et sport FR : ESPN et BBC Sport qui passent bien
+  const API = "https://api.rss2json.com/v1/api.json?count=15&rss_url=";
+
   const CATEGORIES = [
-    { id:"tech",    label:"⚡ Tech & IA"   },
-    { id:"foot",    label:"⚽ Foot"         },
-    { id:"geo",     label:"🌍 Géopolitique" },
-    { id:"finance", label:"📈 Finance"      },
-    { id:"sport",   label:"🏅 Sport FR"     }
+    { id:"tech", label:"⚡ Tech & IA",
+      sources:[
+        { name:"The Verge",  url:"https://www.theverge.com/rss/index.xml" },
+        { name:"TechCrunch", url:"https://techcrunch.com/feed/" },
+        { name:"Ars Technica", url:"https://feeds.arstechnica.com/arstechnica/index" }
+      ]
+    },
+    { id:"foot", label:"⚽ Foot",
+      sources:[
+        { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/football/rss.xml" },
+        { name:"ESPN FC",    url:"https://www.espn.com/espn/rss/soccer/news" }
+      ]
+    },
+    { id:"geo", label:"🌍 Géopolitique",
+      sources:[
+        { name:"BBC World",  url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
+        { name:"Reuters",    url:"https://feeds.reuters.com/reuters/worldNews" }
+      ]
+    },
+    { id:"finance", label:"📈 Finance",
+      sources:[
+        { name:"Reuters Biz", url:"https://feeds.reuters.com/reuters/businessNews" },
+        { name:"CNBC",        url:"https://www.cnbc.com/id/10000664/device/rss/rss.html" }
+      ]
+    },
+    { id:"sport", label:"🏅 Sport",
+      sources:[
+        { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/rss.xml" },
+        { name:"ESPN",       url:"https://www.espn.com/espn/rss/news" }
+      ]
+    }
   ];
 
   const CACHE_TTL = 10 * 60 * 1000;
@@ -96,21 +127,36 @@
     loadFeed(id);
   }
 
+  async function fetchSource(source) {
+    try {
+      const res  = await fetch(API + encodeURIComponent(source.url), { signal: AbortSignal.timeout(10000) });
+      const json = await res.json();
+      if (json.status !== "ok" || !json.items?.length) return [];
+      return json.items.slice(0, 8).map(item => ({
+        title:   item.title?.trim() || "",
+        link:    item.link || "#",
+        pubDate: item.pubDate || "",
+        source:  source.name
+      })).filter(a => a.title && a.link !== "#");
+    } catch(e) { return []; }
+  }
+
   async function loadFeed(catId) {
     const feed = document.getElementById("feed");
+    const cat  = CATEGORIES.find(c => c.id === catId);
+    if (!cat) return;
     if (cache[catId] && Date.now() - cache[catId].ts < CACHE_TTL) {
       renderArticles(cache[catId].articles, catId); return;
     }
     feed.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
-    try {
-      const res  = await fetch("/.netlify/functions/rss?cat=" + catId, { signal: AbortSignal.timeout(12000) });
-      const json = await res.json();
-      if (!json.ok || !json.articles.length) { showError(catId, "Aucun article."); return; }
-      cache[catId] = { articles: json.articles, ts: Date.now() };
-      renderArticles(json.articles, catId);
-    } catch(e) {
-      showError(catId, "Erreur de chargement.");
-    }
+    const results  = await Promise.allSettled(cat.sources.map(s => fetchSource(s)));
+    const articles = results
+      .filter(r => r.status === "fulfilled").flatMap(r => r.value)
+      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+      .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i);
+    if (!articles.length) { showError(catId, "Aucun article chargé.<br><small>Vérifie ta connexion.</small>"); return; }
+    cache[catId] = { articles, ts: Date.now() };
+    renderArticles(articles, catId);
   }
 
   function showError(catId, msg) {

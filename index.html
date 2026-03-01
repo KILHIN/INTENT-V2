@@ -14,15 +14,12 @@
 <body>
   <main class="container">
 
-    <!-- Header -->
     <header class="brand">
       <h1>Intent</h1>
       <div class="tagline">Que veux-tu faire de ce moment ?</div>
     </header>
 
-    <!-- =====================================================
-         ÉCRAN 1 — Moment en cours
-    ====================================================== -->
+    <!-- ÉCRAN 1 — Moment en cours -->
     <section id="screenActive" class="screen hidden">
       <div class="card activeCard">
         <div id="activePath" class="activePath"></div>
@@ -30,8 +27,6 @@
         <div id="activeTimer" class="activeTimer"></div>
         <button id="btnSwitch" class="btnSecondary">↩ Changer de moment</button>
       </div>
-
-      <!-- Feedback post-séance sport -->
       <div id="feedbackBlock" class="card hidden">
         <p class="feedbackTitle">Comment s'est passée la séance ?</p>
         <div class="feedbackBtns">
@@ -42,14 +37,10 @@
       </div>
     </section>
 
-    <!-- =====================================================
-         ÉCRAN 2 — Check-in (Nouveau moment)
-    ====================================================== -->
+    <!-- ÉCRAN 2 — Check-in -->
     <section id="screenCheckin" class="screen hidden">
       <div class="card">
         <h2>Nouveau moment</h2>
-
-        <!-- Question 1 — Énergie -->
         <div class="checkinStep" id="stepEnergy">
           <p class="checkinQ">Comment tu te sens ?</p>
           <div class="checkinBtns">
@@ -58,8 +49,6 @@
             <button class="btnCheckin" data-group="energy" data-value="low">🥱 Fatigué</button>
           </div>
         </div>
-
-        <!-- Question 2 — Temps -->
         <div class="checkinStep hidden" id="stepTime">
           <p class="checkinQ">Combien de temps tu as ?</p>
           <div class="checkinBtns">
@@ -68,8 +57,6 @@
             <button class="btnCheckin" data-group="time" data-value="60">🕑 1h+</button>
           </div>
         </div>
-
-        <!-- Question 3 — Envie -->
         <div class="checkinStep hidden" id="stepMood">
           <p class="checkinQ">Qu'est-ce qui t'attire ?</p>
           <div class="checkinBtns">
@@ -82,15 +69,16 @@
       </div>
     </section>
 
-    <!-- =====================================================
-         ÉCRAN 3 — Propositions de l'assistant
-    ====================================================== -->
+    <!-- ÉCRAN 3 — Propositions -->
     <section id="screenPropose" class="screen hidden">
       <div class="card">
         <h2>Je te propose</h2>
         <div id="proposals" class="proposals"></div>
         <button id="btnRedo" class="btnSecondary" style="margin-top:12px;">↩ Recommencer</button>
       </div>
+
+      <!-- Bouton Actus -->
+      <a href="news.html" class="btnNews">📰 Actus du jour</a>
 
       <!-- Réseaux sociaux en accordéon -->
       <details class="accordion">
@@ -104,26 +92,20 @@
       </details>
     </section>
 
-    <!-- =====================================================
-         ÉCRAN 4 — Session réseau social (V1 intégrée)
-    ====================================================== -->
+    <!-- ÉCRAN 4 — Session sociale -->
     <section id="screenSocial" class="screen hidden">
       <div class="card">
-        <h2 id="socialTitle">Quelle app ?</h2>
+        <h2 id="socialTitle">Session réseaux</h2>
         <div id="socialDesc" class="activeDesc"></div>
-        <button id="btnSocialStop" class="btnDanger">⏹ Terminer la session</button>
+        <button id="btnSocialStop" class="btnDanger">⏹ Terminer</button>
         <button id="btnSocialSwitch" class="btnSecondary">↩ Changer</button>
       </div>
     </section>
 
-    <!-- =====================================================
-         BOUTON FLOTTANT — Nouveau moment
-    ====================================================== -->
+    <!-- BOUTON FLOTTANT -->
     <button id="btnNewMoment" class="btnFloat">+ Nouveau moment</button>
 
-    <!-- =====================================================
-         DEBUG (toujours visible en bas)
-    ====================================================== -->
+    <!-- DEBUG -->
     <details class="accordion debugAccordion">
       <summary>🔍 Debug</summary>
       <div class="accordion__content">
