@@ -4,9 +4,9 @@
 
 const PROXY = "https://api.allorigins.win/get?url=";
 const NEWS_SOURCES = [
-  { name:"The Verge",  url:"https://www.theverge.com/rss/index.xml" },
-  { name:"BBC World",  url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
-  { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/rss.xml" }
+  { name:"Le Figaro", url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" },
+  
+  
 ];
 const NEWS_CACHE_TTL = 15 * 60 * 1000;
 let _newsCache = null;
@@ -155,21 +155,26 @@ function renderSocial(proposal) {
    NEWS WIDGET — inline sur chaque écran
    --------------------------------------------------------- */
 
+function fixEncoding(str) {
+  if (!str) return "";
+  try { return decodeURIComponent(escape(str)); } catch(e) { return str; }
+}
+
 async function fetchNewsWidget() {
   if (_newsCache && Date.now() - _newsCacheTs < NEWS_CACHE_TTL) return _newsCache;
   try {
-    // On prend The Verge en priorité car il passe bien
-    const source = NEWS_SOURCES[0];
-    const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(10000) });
+    const url  = "https://www.lefigaro.fr/rss/figaro_actualites.xml";
+    const res  = await fetch(PROXY + encodeURIComponent(url), { signal: AbortSignal.timeout(12000) });
     const json = await res.json();
     if (!json.contents) return [];
-    const doc   = new DOMParser().parseFromString(json.contents, "text/xml");
+    const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
+    const doc   = new DOMParser().parseFromString(fixed, "text/xml");
     const items = [...doc.querySelectorAll("item")];
     const articles = items.slice(0, 5).map(item => ({
-      title:   item.querySelector("title")?.textContent?.trim() || "",
+      title:   fixEncoding(item.querySelector("title")?.textContent?.trim() || ""),
       link:    item.querySelector("link")?.textContent?.trim() || "#",
       pubDate: item.querySelector("pubDate")?.textContent || "",
-      source:  source.name
+      source:  "Le Figaro"
     })).filter(a => a.title && a.link !== "#");
     _newsCache   = articles;
     _newsCacheTs = Date.now();

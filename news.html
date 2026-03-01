@@ -60,27 +60,29 @@
   <div class="feed" id="feed"></div>
   <script>
   const PROXY = "https://api.allorigins.win/get?url=";
+
+  // Toutes les sources passent via Le Figaro qui fonctionne avec allorigins
+  // + L'Équipe confirmée aussi
   const CATEGORIES = [
     { id:"tech", label:"⚡ Tech & IA", sources:[
-        { name:"The Verge",    url:"https://www.theverge.com/rss/index.xml" },
-        { name:"TechCrunch",   url:"https://techcrunch.com/feed/" },
-        { name:"Ars Technica", url:"https://feeds.arstechnica.com/arstechnica/index" }
+      { name:"Le Figaro Tech", url:"https://www.lefigaro.fr/secteur/high-tech/rss.xml" },
+      { name:"The Verge",      url:"https://www.theverge.com/rss/index.xml" }
     ]},
     { id:"foot", label:"⚽ Foot", sources:[
-        { name:"BBC Football",  url:"https://feeds.bbci.co.uk/sport/football/rss.xml" },
-        { name:"ESPN Soccer",   url:"https://www.espn.com/espn/rss/soccer/news" }
+      { name:"Le Figaro Foot", url:"https://www.lefigaro.fr/sports/football/rss.xml" },
+      { name:"L'Équipe Foot",  url:"https://www.lequipe.fr/rss/actu_rss_Football.xml" }
     ]},
     { id:"geo", label:"🌍 Géopolitique", sources:[
-        { name:"BBC World",  url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
-        { name:"Al Jazeera", url:"https://www.aljazeera.com/xml/rss/all.xml" }
+      { name:"Le Figaro Monde", url:"https://www.lefigaro.fr/international/rss.xml" },
+      { name:"Le Figaro",       url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" }
     ]},
     { id:"finance", label:"📈 Finance", sources:[
-        { name:"BBC Business", url:"https://feeds.bbci.co.uk/news/business/rss.xml" },
-        { name:"CNBC",         url:"https://www.cnbc.com/id/10000664/device/rss/rss.html" }
+      { name:"Le Figaro Éco", url:"https://www.lefigaro.fr/conjoncture/rss.xml" },
+      { name:"Le Figaro Bourse", url:"https://www.lefigaro.fr/bourse/rss.xml" }
     ]},
-    { id:"sport", label:"🏅 Sport", sources:[
-        { name:"BBC Sport", url:"https://feeds.bbci.co.uk/sport/rss.xml" },
-        { name:"ESPN",      url:"https://www.espn.com/espn/rss/news" }
+    { id:"sport", label:"🏅 Sport FR", sources:[
+      { name:"Le Figaro Sport", url:"https://www.lefigaro.fr/sports/rss.xml" },
+      { name:"L'Équipe",        url:"https://www.lequipe.fr/rss/actu_rss.xml" }
     ]}
   ];
 
@@ -112,19 +114,38 @@
     loadFeed(id);
   }
 
+  // Corrige l'encodage latin1 mal interprété en UTF-8
+  function fixEncoding(str) {
+    if (!str) return "";
+    try {
+      return decodeURIComponent(escape(str));
+    } catch(e) {
+      return str;
+    }
+  }
+
   async function fetchSource(source) {
     try {
       const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
       const json = await res.json();
       if (!json.contents) return [];
-      const doc   = new DOMParser().parseFromString(json.contents, "text/xml");
+
+      // Parse XML — on force l'encodage correct
+      const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
+      const doc   = new DOMParser().parseFromString(fixed, "text/xml");
       const items = [...doc.querySelectorAll("item, entry")];
+
       return items.slice(0, 10).map(item => {
-        const title   = item.querySelector("title")?.textContent?.trim() || "";
-        const link    = item.querySelector("link")?.textContent?.trim()
-                     || item.querySelector("link")?.getAttribute("href") || "#";
-        const pubDate = item.querySelector("pubDate, published, updated")?.textContent || "";
-        return { title, link, pubDate, source: source.name };
+        const rawTitle = item.querySelector("title")?.textContent?.trim() || "";
+        const rawLink  = item.querySelector("link")?.textContent?.trim()
+                      || item.querySelector("link")?.getAttribute("href") || "#";
+        const pubDate  = item.querySelector("pubDate, published, updated")?.textContent || "";
+        return {
+          title:   fixEncoding(rawTitle),
+          link:    rawLink,
+          pubDate: pubDate,
+          source:  source.name
+        };
       }).filter(a => a.title && a.link !== "#");
     } catch(e) { return []; }
   }
