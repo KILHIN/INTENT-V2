@@ -1,26 +1,39 @@
 /* =========================================================
    MAIN — Intent V2
-   Orchestrateur — init, navigation, événements
    ========================================================= */
 
-/* ---------------------------------------------------------
-   ÉTAT LOCAL
-   --------------------------------------------------------- */
+const PROXY = "https://api.allorigins.win/get?url=";
+const NEWS_SOURCES = [
+  { name:"The Verge",  url:"https://www.theverge.com/rss/index.xml" },
+  { name:"BBC World",  url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
+  { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/rss.xml" }
+];
+const NEWS_CACHE_TTL = 15 * 60 * 1000;
+let _newsCache = null;
+let _newsCacheTs = 0;
 
 let _checkin = { energy: null, time: null, mood: null };
 
 /* ---------------------------------------------------------
-   NAVIGATION — 4 écrans
+   NAVIGATION
    --------------------------------------------------------- */
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
   const el = document.getElementById(id);
   if (el) el.classList.remove("hidden");
+  // Injecte le widget actus dans l'écran visible
+  const widgetMap = {
+    screenActive:  "newsWidgetActive",
+    screenCheckin: "newsWidgetCheckin",
+    screenPropose: "newsWidgetPropose",
+    screenSocial:  "newsWidgetSocial"
+  };
+  if (widgetMap[id]) renderNewsWidget(widgetMap[id]);
 }
 
 /* ---------------------------------------------------------
-   ÉCRAN ACTIF — moment en cours
+   ÉCRAN ACTIF
    --------------------------------------------------------- */
 
 function renderActive() {
@@ -29,163 +42,182 @@ function renderActive() {
     showScreen("screenCheckin");
     return;
   }
-
-  const icons = { sport: "💪", relax: "🧘", inspire: "✨", social: "📱" };
-  const labels = { sport: "Sport", relax: "Détente", inspire: "Inspiration", social: "Réseaux" };
-
+  const icons  = { sport:"💪", relax:"🧘", inspire:"✨", social:"📱" };
+  const labels = { sport:"Sport", relax:"Détente", inspire:"Inspiration", social:"Réseaux" };
   document.getElementById("activePath").textContent =
-    `${icons[ctx.path] || "▶"} ${labels[ctx.path] || ctx.path}`;
-
-  document.getElementById("activeDesc").textContent =
-    ctx.proposalLabel || "";
-
-  // Timer — temps écoulé
+    (icons[ctx.path] || "▶") + " " + (labels[ctx.path] || ctx.path);
+  document.getElementById("activeDesc").textContent = ctx.proposalLabel || "";
   if (ctx.startedAt) {
     const elapsed = Math.round((Date.now() - ctx.startedAt) / 60000);
     document.getElementById("activeTimer").textContent =
-      `${elapsed} min écoulées sur ${ctx.time} min prévues`;
+      elapsed + " min écoulées sur " + ctx.time + " min prévues";
   }
-
-  // Feedback sport
-  const feedback = document.getElementById("feedbackBlock");
-  if (ctx.path === "sport" && ctx.status === "active") {
-    feedback.classList.remove("hidden");
-  } else {
-    feedback.classList.add("hidden");
-  }
-
+  const fb = document.getElementById("feedbackBlock");
+  if (ctx.path === "sport") fb.classList.remove("hidden");
+  else fb.classList.add("hidden");
   showScreen("screenActive");
 }
 
 /* ---------------------------------------------------------
-   ÉCRAN CHECK-IN
+   CHECK-IN
    --------------------------------------------------------- */
 
 function startCheckin() {
-  // Clôture le moment en cours si il y en a un
-  if (Context.isActive()) {
-    Context.end("switched");
-  }
-
-  // Reset check-in
+  if (Context.isActive()) Context.end("switched");
   _checkin = { energy: null, time: null, mood: null };
-
-  // Affiche seulement la première question
   document.getElementById("stepEnergy").classList.remove("hidden");
   document.getElementById("stepTime").classList.add("hidden");
   document.getElementById("stepMood").classList.add("hidden");
-
-  // Reset visuel des boutons
   document.querySelectorAll(".btnCheckin").forEach(b => b.classList.remove("selected"));
-
   showScreen("screenCheckin");
 }
 
 function handleCheckinTap(btn) {
   const group = btn.dataset.group;
   const value = btn.dataset.value;
-
-  // Highlight sélection
-  document.querySelectorAll(`.btnCheckin[data-group="${group}"]`)
+  document.querySelectorAll('.btnCheckin[data-group="' + group + '"]')
     .forEach(b => b.classList.remove("selected"));
   btn.classList.add("selected");
-
   _checkin[group] = value;
-
-  // Progression — question suivante
   if (group === "energy") {
     setTimeout(() => {
       document.getElementById("stepTime").classList.remove("hidden");
-      document.getElementById("stepTime").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      document.getElementById("stepTime").scrollIntoView({ behavior:"smooth", block:"nearest" });
     }, 250);
   }
-
   if (group === "time") {
     setTimeout(() => {
       document.getElementById("stepMood").classList.remove("hidden");
-      document.getElementById("stepMood").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      document.getElementById("stepMood").scrollIntoView({ behavior:"smooth", block:"nearest" });
     }, 250);
   }
-
-  if (group === "mood") {
-    // Check-in complet → propose
-    setTimeout(() => submitCheckin(), 300);
-  }
+  if (group === "mood") setTimeout(() => submitCheckin(), 300);
 }
 
 function submitCheckin() {
   const { energy, time, mood } = _checkin;
   if (!energy || !time || !mood) return;
-
   const ctx = Context.start({ energy, time, mood });
   if (!ctx) return;
-
   renderProposals(ctx);
 }
 
 /* ---------------------------------------------------------
-   ÉCRAN PROPOSITIONS
+   PROPOSITIONS
    --------------------------------------------------------- */
 
 function renderProposals(ctx) {
-  const profile  = Profile.get() || Profile.init();
+  const profile   = Profile.get() || Profile.init();
   const proposals = Assistant.propose(ctx, profile);
-
-  const el = document.getElementById("proposals");
-
+  const el        = document.getElementById("proposals");
   if (!proposals.length) {
-    el.innerHTML = `<p class="noProposal">Aucune proposition disponible.</p>`;
+    el.innerHTML = '<p class="noProposal">Aucune proposition disponible.</p>';
     showScreen("screenPropose");
     return;
   }
-
-  el.innerHTML = proposals.map((p, i) => `
-    <div class="proposalCard" data-index="${i}">
-      <div class="proposalIcon">${p.icon}</div>
-      <div class="proposalBody">
-        <div class="proposalLabel">${p.label}</div>
-        <div class="proposalDesc">${p.description}</div>
-      </div>
-      <button class="btnChoose" data-index="${i}">Choisir</button>
-    </div>
-  `).join("");
-
-  // Stocke les proposals pour y accéder au clic
+  el.innerHTML = proposals.map((p, i) =>
+    '<div class="proposalCard">' +
+      '<div class="proposalIcon">' + p.icon + '</div>' +
+      '<div class="proposalBody">' +
+        '<div class="proposalLabel">' + p.label + '</div>' +
+        '<div class="proposalDesc">' + p.description + '</div>' +
+      '</div>' +
+      '<button class="btnChoose" data-index="' + i + '">Choisir</button>' +
+    '</div>'
+  ).join("");
   window._currentProposals = proposals;
-
   showScreen("screenPropose");
 }
 
 function chooseProposal(index) {
-  const proposals = window._currentProposals || [];
-  const p = proposals[index];
+  const p = (window._currentProposals || [])[index];
   if (!p) return;
-
   Context.setPath(p.path);
-
-  // Enrichit le contexte avec le label choisi
   const ctx = Context.get();
-  if (ctx) {
-    Storage.set("intent_context", { ...ctx, proposalLabel: p.description });
-  }
-
-  if (p.path === "social") {
-    renderSocial(p);
-  } else {
-    renderActive();
-  }
+  if (ctx) Storage.set("intent_context", { ...ctx, proposalLabel: p.description });
+  if (p.path === "social") renderSocial(p);
+  else renderActive();
 }
 
 /* ---------------------------------------------------------
-   ÉCRAN SOCIAL
+   SOCIAL
    --------------------------------------------------------- */
 
 function renderSocial(proposal) {
   document.getElementById("socialTitle").textContent =
-    proposal ? `${proposal.icon} ${proposal.label}` : "Session réseaux";
+    proposal ? proposal.icon + " " + proposal.label : "Session réseaux";
   document.getElementById("socialDesc").textContent =
     proposal ? proposal.description : "";
   showScreen("screenSocial");
+}
+
+/* ---------------------------------------------------------
+   NEWS WIDGET — inline sur chaque écran
+   --------------------------------------------------------- */
+
+async function fetchNewsWidget() {
+  if (_newsCache && Date.now() - _newsCacheTs < NEWS_CACHE_TTL) return _newsCache;
+  try {
+    // On prend The Verge en priorité car il passe bien
+    const source = NEWS_SOURCES[0];
+    const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(10000) });
+    const json = await res.json();
+    if (!json.contents) return [];
+    const doc   = new DOMParser().parseFromString(json.contents, "text/xml");
+    const items = [...doc.querySelectorAll("item")];
+    const articles = items.slice(0, 5).map(item => ({
+      title:   item.querySelector("title")?.textContent?.trim() || "",
+      link:    item.querySelector("link")?.textContent?.trim() || "#",
+      pubDate: item.querySelector("pubDate")?.textContent || "",
+      source:  source.name
+    })).filter(a => a.title && a.link !== "#");
+    _newsCache   = articles;
+    _newsCacheTs = Date.now();
+    return articles;
+  } catch(e) { return []; }
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const h = Math.floor(diff / 3600000), m = Math.floor(diff / 60000);
+  if (h > 48) return Math.floor(h/24) + "j";
+  if (h >= 1) return h + "h";
+  if (m >= 1) return m + "min";
+  return "à l'instant";
+}
+
+async function renderNewsWidget(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML =
+    '<div class="newsWidgetHeader">' +
+      '<span class="newsWidgetTitle">📰 Actus</span>' +
+      '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
+    '</div>' +
+    '<div class="newsWidgetLoader"><span></span><span></span><span></span></div>';
+
+  const articles = await fetchNewsWidget();
+  if (!articles.length) {
+    el.innerHTML =
+      '<div class="newsWidgetHeader">' +
+        '<span class="newsWidgetTitle">📰 Actus</span>' +
+        '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
+      '</div>' +
+      '<p class="newsWidgetEmpty">Actus indisponibles</p>';
+    return;
+  }
+  el.innerHTML =
+    '<div class="newsWidgetHeader">' +
+      '<span class="newsWidgetTitle">📰 Actus</span>' +
+      '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
+    '</div>' +
+    articles.map(a =>
+      '<a class="newsWidgetItem" href="' + a.link + '" target="_blank" rel="noopener noreferrer">' +
+        '<span class="newsWidgetItemSource">' + a.source + ' · ' + timeAgo(a.pubDate) + '</span>' +
+        '<span class="newsWidgetItemTitle">' + a.title + '</span>' +
+      '</a>'
+    ).join("");
 }
 
 /* ---------------------------------------------------------
@@ -195,24 +227,16 @@ function renderSocial(proposal) {
 function refreshDebug() {
   const ctx     = Context.get();
   const profile = Profile.get();
-  const kb      = Storage.sizeKB();
-
-  const info = {
-    "💾 Storage": kb + " KB",
-    "⚡ Contexte": ctx
-      ? `${ctx.mood} · ${ctx.energy} · ${ctx.time}min · path:${ctx.path || "none"} · ${ctx.status}`
-      : "aucun",
-    "🏋️ Niveaux": profile
-      ? Object.entries(profile.fitnessLevel).map(([k,v]) => `${k}:${v}`).join(" · ")
-      : "profil manquant"
-  };
-
   const el = document.getElementById("debugOutput");
-  if (el) {
-    el.textContent = Object.entries(info)
-      .map(([k, v]) => k + "\n  " + v)
-      .join("\n\n");
-  }
+  if (!el) return;
+  el.textContent =
+    "💾 Storage: " + Storage.sizeKB() + " KB\n\n" +
+    "⚡ Contexte: " + (ctx
+      ? ctx.mood + " · " + ctx.energy + " · " + ctx.time + "min · path:" + (ctx.path||"none") + " · " + ctx.status
+      : "aucun") + "\n\n" +
+    "🏋️ Niveaux: " + (profile
+      ? Object.entries(profile.fitnessLevel).map(([k,v]) => k+":"+v).join(" · ")
+      : "profil manquant");
 }
 
 function resetAll() {
@@ -228,82 +252,55 @@ function resetAll() {
 
 (function init() {
   try {
-    // Initialise le profil si premier lancement
     Profile.init();
-
-    // Routing initial
     const ctx = Context.get();
-    if (ctx && ctx.status === "active" && ctx.path) {
-      renderActive();
-    } else {
-      showScreen("screenCheckin");
-      startCheckin();
-    }
+    if (ctx && ctx.status === "active" && ctx.path) renderActive();
+    else startCheckin();
 
-    // Bouton flottant — Nouveau moment
-    document.getElementById("btnNewMoment")
-      .addEventListener("click", startCheckin);
+    document.getElementById("btnNewMoment").addEventListener("click", startCheckin);
+    document.getElementById("btnSwitch").addEventListener("click", startCheckin);
+    document.getElementById("btnRedo").addEventListener("click", startCheckin);
 
-    // Bouton switch depuis écran actif
-    document.getElementById("btnSwitch")
-      .addEventListener("click", startCheckin);
+    document.querySelectorAll(".btnCheckin").forEach(btn =>
+      btn.addEventListener("click", () => handleCheckinTap(btn))
+    );
 
-    // Bouton recommencer depuis propositions
-    document.getElementById("btnRedo")
-      .addEventListener("click", startCheckin);
-
-    // Boutons check-in
-    document.querySelectorAll(".btnCheckin").forEach(btn => {
-      btn.addEventListener("click", () => handleCheckinTap(btn));
-    });
-
-    // Boutons choisir proposition
     document.getElementById("proposals").addEventListener("click", e => {
       const btn = e.target.closest(".btnChoose");
       if (btn) chooseProposal(Number(btn.dataset.index));
     });
 
-    // Boutons apps directes
-    document.querySelectorAll(".btnApp").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const app = btn.dataset.app;
-        renderSocial({ icon: "📱", label: app, description: `Session ${app}` });
-      });
-    });
+    document.querySelectorAll(".btnApp").forEach(btn =>
+      btn.addEventListener("click", () =>
+        renderSocial({ icon:"📱", label: btn.dataset.app, description: "Session " + btn.dataset.app })
+      )
+    );
 
-    // Feedback sport
-    document.querySelectorAll(".btnFeedback").forEach(btn => {
+    document.querySelectorAll(".btnFeedback").forEach(btn =>
       btn.addEventListener("click", () => {
         const feedback = btn.dataset.feedback;
         Context.setFeedback(feedback);
         Profile.adjustLevel("strength", feedback);
         startCheckin();
-      });
+      })
+    );
+
+    document.getElementById("btnSocialStop").addEventListener("click", () => {
+      Context.end("completed");
+      startCheckin();
     });
 
-    // Social — terminer
-    document.getElementById("btnSocialStop")
-      .addEventListener("click", () => {
-        Context.end("completed");
-        startCheckin();
-      });
-
-    document.getElementById("btnSocialSwitch")
-      .addEventListener("click", startCheckin);
-
-    // Debug
-    document.getElementById("btnDebugRefresh")
-      .addEventListener("click", refreshDebug);
-    document.getElementById("btnResetAll")
-      .addEventListener("click", resetAll);
+    document.getElementById("btnSocialSwitch").addEventListener("click", startCheckin);
+    document.getElementById("btnDebugRefresh").addEventListener("click", refreshDebug);
+    document.getElementById("btnResetAll").addEventListener("click", resetAll);
 
     refreshDebug();
 
   } catch(e) {
     document.body.innerHTML =
-      `<div style="padding:24px;color:#fff;background:#08090c;min-height:100vh;font-family:-apple-system,sans-serif;">
-        <h2>Intent V2 — erreur</h2>
-        <pre style="background:rgba(255,255,255,.06);padding:14px;border-radius:12px;font-size:13px;white-space:pre-wrap;">${String(e)}</pre>
-      </div>`;
+      '<div style="padding:24px;color:#fff;background:#08090c;min-height:100vh;font-family:-apple-system,sans-serif;">' +
+        '<h2>Intent V2 — erreur</h2>' +
+        '<pre style="background:rgba(255,255,255,.06);padding:14px;border-radius:12px;font-size:13px;white-space:pre-wrap;">' + String(e) + '</pre>' +
+      '</div>';
   }
 })();

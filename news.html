@@ -58,45 +58,30 @@
   </header>
   <div class="tabs" id="tabs"></div>
   <div class="feed" id="feed"></div>
-
   <script>
-  // rss2json — seul proxy qui a fonctionné
-  // On utilise uniquement des sources anglophones reconnues pour tech/geo/finance
-  // Pour foot et sport FR : ESPN et BBC Sport qui passent bien
-  const API = "https://api.rss2json.com/v1/api.json?count=15&rss_url=";
-
+  const PROXY = "https://api.allorigins.win/get?url=";
   const CATEGORIES = [
-    { id:"tech", label:"⚡ Tech & IA",
-      sources:[
-        { name:"The Verge",  url:"https://www.theverge.com/rss/index.xml" },
-        { name:"TechCrunch", url:"https://techcrunch.com/feed/" },
+    { id:"tech", label:"⚡ Tech & IA", sources:[
+        { name:"The Verge",    url:"https://www.theverge.com/rss/index.xml" },
+        { name:"TechCrunch",   url:"https://techcrunch.com/feed/" },
         { name:"Ars Technica", url:"https://feeds.arstechnica.com/arstechnica/index" }
-      ]
-    },
-    { id:"foot", label:"⚽ Foot",
-      sources:[
-        { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/football/rss.xml" },
-        { name:"ESPN FC",    url:"https://www.espn.com/espn/rss/soccer/news" }
-      ]
-    },
-    { id:"geo", label:"🌍 Géopolitique",
-      sources:[
+    ]},
+    { id:"foot", label:"⚽ Foot", sources:[
+        { name:"BBC Football",  url:"https://feeds.bbci.co.uk/sport/football/rss.xml" },
+        { name:"ESPN Soccer",   url:"https://www.espn.com/espn/rss/soccer/news" }
+    ]},
+    { id:"geo", label:"🌍 Géopolitique", sources:[
         { name:"BBC World",  url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
-        { name:"Reuters",    url:"https://feeds.reuters.com/reuters/worldNews" }
-      ]
-    },
-    { id:"finance", label:"📈 Finance",
-      sources:[
-        { name:"Reuters Biz", url:"https://feeds.reuters.com/reuters/businessNews" },
-        { name:"CNBC",        url:"https://www.cnbc.com/id/10000664/device/rss/rss.html" }
-      ]
-    },
-    { id:"sport", label:"🏅 Sport",
-      sources:[
-        { name:"BBC Sport",  url:"https://feeds.bbci.co.uk/sport/rss.xml" },
-        { name:"ESPN",       url:"https://www.espn.com/espn/rss/news" }
-      ]
-    }
+        { name:"Al Jazeera", url:"https://www.aljazeera.com/xml/rss/all.xml" }
+    ]},
+    { id:"finance", label:"📈 Finance", sources:[
+        { name:"BBC Business", url:"https://feeds.bbci.co.uk/news/business/rss.xml" },
+        { name:"CNBC",         url:"https://www.cnbc.com/id/10000664/device/rss/rss.html" }
+    ]},
+    { id:"sport", label:"🏅 Sport", sources:[
+        { name:"BBC Sport", url:"https://feeds.bbci.co.uk/sport/rss.xml" },
+        { name:"ESPN",      url:"https://www.espn.com/espn/rss/news" }
+    ]}
   ];
 
   const CACHE_TTL = 10 * 60 * 1000;
@@ -129,15 +114,18 @@
 
   async function fetchSource(source) {
     try {
-      const res  = await fetch(API + encodeURIComponent(source.url), { signal: AbortSignal.timeout(10000) });
+      const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
       const json = await res.json();
-      if (json.status !== "ok" || !json.items?.length) return [];
-      return json.items.slice(0, 8).map(item => ({
-        title:   item.title?.trim() || "",
-        link:    item.link || "#",
-        pubDate: item.pubDate || "",
-        source:  source.name
-      })).filter(a => a.title && a.link !== "#");
+      if (!json.contents) return [];
+      const doc   = new DOMParser().parseFromString(json.contents, "text/xml");
+      const items = [...doc.querySelectorAll("item, entry")];
+      return items.slice(0, 10).map(item => {
+        const title   = item.querySelector("title")?.textContent?.trim() || "";
+        const link    = item.querySelector("link")?.textContent?.trim()
+                     || item.querySelector("link")?.getAttribute("href") || "#";
+        const pubDate = item.querySelector("pubDate, published, updated")?.textContent || "";
+        return { title, link, pubDate, source: source.name };
+      }).filter(a => a.title && a.link !== "#");
     } catch(e) { return []; }
   }
 
@@ -154,15 +142,14 @@
       .filter(r => r.status === "fulfilled").flatMap(r => r.value)
       .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
       .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i);
-    if (!articles.length) { showError(catId, "Aucun article chargé.<br><small>Vérifie ta connexion.</small>"); return; }
+    if (!articles.length) {
+      feed.innerHTML = '<div class="stateMsg">Aucun article chargé.<br><button class="retryBtn" onclick="retry(\'' + catId + '\')">Réessayer</button></div>';
+      return;
+    }
     cache[catId] = { articles, ts: Date.now() };
     renderArticles(articles, catId);
   }
 
-  function showError(catId, msg) {
-    document.getElementById("feed").innerHTML =
-      '<div class="stateMsg">' + msg + '<br><button class="retryBtn" onclick="retry(\'' + catId + '\')">Réessayer</button></div>';
-  }
   function retry(catId) { delete cache[catId]; loadFeed(catId); }
   window.retry = retry;
 

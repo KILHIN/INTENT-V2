@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-title" content="Intent" />
   <meta name="theme-color" content="#08090c" />
 </head>
-
 <body>
   <main class="container">
 
@@ -35,6 +34,8 @@
           <button class="btnFeedback" data-feedback="hard">Trop dur</button>
         </div>
       </div>
+      <!-- Actus sous le moment actif -->
+      <div class="newsWidget" id="newsWidgetActive"></div>
     </section>
 
     <!-- ÉCRAN 2 — Check-in -->
@@ -67,6 +68,8 @@
           </div>
         </div>
       </div>
+      <!-- Actus sous le check-in -->
+      <div class="newsWidget" id="newsWidgetCheckin"></div>
     </section>
 
     <!-- ÉCRAN 3 — Propositions -->
@@ -76,10 +79,8 @@
         <div id="proposals" class="proposals"></div>
         <button id="btnRedo" class="btnSecondary" style="margin-top:12px;">↩ Recommencer</button>
       </div>
-
-      <!-- Bouton Actus -->
-      <a href="news.html" class="btnNews">📰 Actus du jour</a>
-
+      <!-- Actus sous les propositions -->
+      <div class="newsWidget" id="newsWidgetPropose"></div>
       <!-- Réseaux sociaux en accordéon -->
       <details class="accordion">
         <summary>📱 Accès direct aux apps</summary>
@@ -100,6 +101,7 @@
         <button id="btnSocialStop" class="btnDanger">⏹ Terminer</button>
         <button id="btnSocialSwitch" class="btnSecondary">↩ Changer</button>
       </div>
+      <div class="newsWidget" id="newsWidgetSocial"></div>
     </section>
 
     <!-- BOUTON FLOTTANT -->
