@@ -34,8 +34,6 @@
           <button class="btnFeedback" data-feedback="hard">Trop dur</button>
         </div>
       </div>
-      <!-- Actus sous le moment actif -->
-      <div class="newsWidget" id="newsWidgetActive"></div>
     </section>
 
     <!-- ÉCRAN 2 — Check-in -->
@@ -68,8 +66,6 @@
           </div>
         </div>
       </div>
-      <!-- Actus sous le check-in -->
-      <div class="newsWidget" id="newsWidgetCheckin"></div>
     </section>
 
     <!-- ÉCRAN 3 — Propositions -->
@@ -79,8 +75,31 @@
         <div id="proposals" class="proposals"></div>
         <button id="btnRedo" class="btnSecondary" style="margin-top:12px;">↩ Recommencer</button>
       </div>
-      <!-- Actus sous les propositions -->
-      <div class="newsWidget" id="newsWidgetPropose"></div>
+      <!-- Liens actus par catégorie -->
+      <div class="card newsLinks">
+        <div class="newsLinksHeader">📰 Actus</div>
+        <div class="newsLinksRow">
+          <span class="newsLinksLabel">Général</span>
+          <a href="https://www.lefigaro.fr" target="_blank" class="btnNews">Le Figaro</a>
+          <a href="https://www.bfmtv.com" target="_blank" class="btnNews">BFM TV</a>
+        </div>
+        <div class="newsLinksRow">
+          <span class="newsLinksLabel">Sport</span>
+          <a href="https://www.lequipe.fr" target="_blank" class="btnNews">L'Équipe</a>
+          <a href="https://rmcsport.bfmtv.com" target="_blank" class="btnNews">RMC Sport</a>
+        </div>
+        <div class="newsLinksRow">
+          <span class="newsLinksLabel">Tech</span>
+          <a href="https://www.01net.com" target="_blank" class="btnNews">01net</a>
+          <a href="https://www.theverge.com" target="_blank" class="btnNews">The Verge</a>
+        </div>
+        <div class="newsLinksRow">
+          <span class="newsLinksLabel">Finance</span>
+          <a href="https://www.lesechos.fr" target="_blank" class="btnNews">Les Échos</a>
+          <a href="https://www.boursorama.com/bourse/actualites/" target="_blank" class="btnNews">Boursorama</a>
+        </div>
+      </div>
+
       <!-- Réseaux sociaux en accordéon -->
       <details class="accordion">
         <summary>📱 Accès direct aux apps</summary>
@@ -101,7 +120,6 @@
         <button id="btnSocialStop" class="btnDanger">⏹ Terminer</button>
         <button id="btnSocialSwitch" class="btnSecondary">↩ Changer</button>
       </div>
-      <div class="newsWidget" id="newsWidgetSocial"></div>
     </section>
 
     <!-- BOUTON FLOTTANT -->

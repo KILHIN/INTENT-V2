@@ -3,14 +3,6 @@
    ========================================================= */
 
 const PROXY = "https://api.allorigins.win/get?url=";
-const NEWS_SOURCES = [
-  { name:"Le Figaro", url:"https://www.lefigaro.fr/rss/figaro_actualites.xml" },
-  { name:"RMC Sport", url:"https://rmcsport.bfmtv.com/rss/football/" },
-  { name:"BFM TV",    url:"https://www.bfmtv.com/rss/news-24-7/" }
-];
-const NEWS_CACHE_TTL = 15 * 60 * 1000;
-let _newsCache = null;
-let _newsCacheTs = 0;
 
 let _checkin = { energy: null, time: null, mood: null };
 
@@ -22,14 +14,6 @@ function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
   const el = document.getElementById(id);
   if (el) el.classList.remove("hidden");
-  // Injecte le widget actus dans l'écran visible
-  const widgetMap = {
-    screenActive:  "newsWidgetActive",
-    screenCheckin: "newsWidgetCheckin",
-    screenPropose: "newsWidgetPropose",
-    screenSocial:  "newsWidgetSocial"
-  };
-  if (widgetMap[id]) renderNewsWidget(widgetMap[id]);
 }
 
 /* ---------------------------------------------------------
@@ -155,83 +139,9 @@ function renderSocial(proposal) {
    NEWS WIDGET — inline sur chaque écran
    --------------------------------------------------------- */
 
-function fixEncoding(str) {
-  if (!str) return "";
-  try { return decodeURIComponent(escape(str)); } catch(e) { return str; }
-}
 
-async function fetchNewsWidget() {
-  if (_newsCache && Date.now() - _newsCacheTs < NEWS_CACHE_TTL) return _newsCache;
-  try {
-    const results = await Promise.allSettled(
-      NEWS_SOURCES.map(async source => {
-        const res  = await fetch(PROXY + encodeURIComponent(source.url), { signal: AbortSignal.timeout(12000) });
-        const json = await res.json();
-        if (!json.contents || json.contents.includes("404")) return [];
-        const fixed = json.contents.replace(/encoding="[^"]*"/i, 'encoding="UTF-8"');
-        const doc   = new DOMParser().parseFromString(fixed, "text/xml");
-        return [...doc.querySelectorAll("item, entry")].slice(0, 5).map(item => ({
-          title:   fixEncoding(item.querySelector("title")?.textContent?.trim() || ""),
-          link:    item.querySelector("link")?.textContent?.trim()
-                || item.querySelector("link")?.getAttribute("href") || "#",
-          pubDate: item.querySelector("pubDate, published, updated")?.textContent || "",
-          source:  source.name
-        })).filter(a => a.title && a.link !== "#");
-      })
-    );
-    const articles = results
-      .filter(r => r.status === "fulfilled").flatMap(r => r.value)
-      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-      .filter((a, i, arr) => arr.findIndex(b => b.title === a.title) === i)
-      .slice(0, 6);
-    _newsCache   = articles;
-    _newsCacheTs = Date.now();
-    return articles;
-  } catch(e) { return []; }
-}
 
-function timeAgo(dateStr) {
-  if (!dateStr) return "";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const h = Math.floor(diff / 3600000), m = Math.floor(diff / 60000);
-  if (h > 48) return Math.floor(h/24) + "j";
-  if (h >= 1) return h + "h";
-  if (m >= 1) return m + "min";
-  return "à l'instant";
-}
 
-async function renderNewsWidget(containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML =
-    '<div class="newsWidgetHeader">' +
-      '<span class="newsWidgetTitle">📰 Actus</span>' +
-      '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
-    '</div>' +
-    '<div class="newsWidgetLoader"><span></span><span></span><span></span></div>';
-
-  const articles = await fetchNewsWidget();
-  if (!articles.length) {
-    el.innerHTML =
-      '<div class="newsWidgetHeader">' +
-        '<span class="newsWidgetTitle">📰 Actus</span>' +
-        '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
-      '</div>' +
-      '<p class="newsWidgetEmpty">Actus indisponibles</p>';
-    return;
-  }
-  el.innerHTML =
-    '<div class="newsWidgetHeader">' +
-      '<span class="newsWidgetTitle">📰 Actus</span>' +
-      '<a href="news.html" class="newsWidgetMore">Tout voir →</a>' +
-    '</div>' +
-    articles.map(a =>
-      '<a class="newsWidgetItem" href="' + a.link + '" target="_blank" rel="noopener noreferrer">' +
-        '<span class="newsWidgetItemSource">' + a.source + ' · ' + timeAgo(a.pubDate) + '</span>' +
-        '<span class="newsWidgetItemTitle">' + a.title + '</span>' +
-      '</a>'
-    ).join("");
-}
 
 /* ---------------------------------------------------------
    DEBUG
